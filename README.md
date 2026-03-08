@@ -1,4 +1,4 @@
-# 🚀 PitchForge — Multi-Agent Startup Pitch Generator
+#  PitchForge — Multi-Agent Startup Pitch Generator
 
 > Turn any startup idea into a complete investor pitch deck in ~90 seconds using a 5-agent AI pipeline.
 
