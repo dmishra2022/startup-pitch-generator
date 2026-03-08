@@ -2,7 +2,11 @@ package com.startup.pitch.orchestrator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.startup.pitch.agent.*;
+import com.startup.pitch.config.LangChain4jConfig;
 import com.startup.pitch.model.*;
+import com.startup.pitch.tools.FinancialCalculatorTool;
+import com.startup.pitch.tools.WebResearchTool;
+import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +50,7 @@ public class PitchOrchestrator {
     private final JudgeAgent judge;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
+    private final LangChain4jConfig langChain4jConfig;
 
     @Value("${app.agent.judge.enabled:true}")
     private boolean judgeEnabled;
@@ -60,7 +65,8 @@ public class PitchOrchestrator {
             PitchCreatorAgent pitchCreator,
             JudgeAgent judge,
             ApplicationEventPublisher eventPublisher,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            LangChain4jConfig langChain4jConfig) {
         this.marketAnalyst = marketAnalyst;
         this.productManager = productManager;
         this.financialAnalyst = financialAnalyst;
@@ -68,6 +74,7 @@ public class PitchOrchestrator {
         this.judge = judge;
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
+        this.langChain4jConfig = langChain4jConfig;
     }
 
     /**
@@ -75,6 +82,18 @@ public class PitchOrchestrator {
      * Called from @Async method in PitchGenerationService.
      */
     public PipelineResult run(String sessionId, StartupIdeaRequest request) {
+        String customApiKey = request.apiKey() != null && !request.apiKey().isBlank() ? request.apiKey() : null;
+        return runWithApiKey(sessionId, request, customApiKey);
+    }
+
+    private PipelineResult runWithApiKey(String sessionId, StartupIdeaRequest request, String customApiKey) {
+        // Use custom agents if apiKey provided
+        MarketAnalystAgent marketAgent = customApiKey != null ? createMarketAnalystWithKey(customApiKey) : marketAnalyst;
+        ProductManagerAgent productAgent = customApiKey != null ? createProductManagerWithKey(customApiKey) : productManager;
+        FinancialAnalystAgent financialAgent = customApiKey != null ? createFinancialAnalystWithKey(customApiKey) : financialAnalyst;
+        PitchCreatorAgent pitchAgent = customApiKey != null ? createPitchCreatorWithKey(customApiKey) : pitchCreator;
+        JudgeAgent judgeAgent = customApiKey != null ? createJudgeWithKey(customApiKey) : judge;
+
         var builder = PipelineResult.builder(sessionId, request.concept());
 
         try {
@@ -82,7 +101,7 @@ public class PitchOrchestrator {
             emit(PipelineProgress.stageStart(sessionId, PipelineStage.MARKET_ANALYSIS));
 
             String marketJson = streamAndAccumulate(sessionId, PipelineStage.MARKET_ANALYSIS,
-                    () -> marketAnalyst.analyzeMarketStream(request.toEnrichedPrompt()));
+                    () -> marketAgent.analyzeMarketStream(request.toEnrichedPrompt()));
 
             MarketReport marketReport = parse(marketJson, MarketReport.class, "MarketReport");
             if (marketReport.isRefused()) {
@@ -99,7 +118,7 @@ public class PitchOrchestrator {
             String marketSummary = toJson(marketReport);
 
             String productJson = streamAndAccumulate(sessionId, PipelineStage.PRODUCT_DEFINITION,
-                    () -> productManager.defineProductStream(marketSummary, request.concept()));
+                    () -> productAgent.defineProductStream(marketSummary, request.concept()));
 
             ProductSpec productSpec = parse(productJson, ProductSpec.class, "ProductSpec");
             builder.productSpec(productSpec);
@@ -112,7 +131,7 @@ public class PitchOrchestrator {
             String productSummary = toJson(productSpec);
 
             FinancialProjection financials = streamFinancialsWithRetry(
-                    sessionId, marketSummary, productSummary);
+                    sessionId, marketSummary, productSummary, financialAgent);
             builder.financialProjection(financials);
             emit(PipelineProgress.stageComplete(sessionId, PipelineStage.FINANCIAL_PROJECTION,
                     buildFinancialSummary(financials)));
@@ -124,7 +143,7 @@ public class PitchOrchestrator {
             String financialSummary = toJson(financials);
 
             String pitchJson = streamAndAccumulate(sessionId, PipelineStage.PITCH_CREATION,
-                    () -> pitchCreator.createPitchStream(
+                    () -> pitchAgent.createPitchStream(
                             marketSummary, productSummary, financialSummary, request.concept()));
 
             PitchDeck pitchDeck = parse(pitchJson, PitchDeck.class, "PitchDeck");
@@ -138,10 +157,10 @@ public class PitchOrchestrator {
                 emit(PipelineProgress.stageStart(sessionId, PipelineStage.EVALUATION));
 
                 // Judge is non-streaming: fast, tiny, schema-critical
-                builder.marketEvaluation(judge.evaluate("Market Analysis", marketSummary));
-                builder.productEvaluation(judge.evaluate("Product Definition", productSummary));
-                builder.financialEvaluation(judge.evaluate("Financial Projection", financialSummary));
-                builder.pitchEvaluation(judge.evaluate("Pitch Deck", pitchDeck.executiveSummary()));
+                builder.marketEvaluation(judgeAgent.evaluate("Market Analysis", marketSummary));
+                builder.productEvaluation(judgeAgent.evaluate("Product Definition", productSummary));
+                builder.financialEvaluation(judgeAgent.evaluate("Financial Projection", financialSummary));
+                builder.pitchEvaluation(judgeAgent.evaluate("Pitch Deck", pitchDeck.executiveSummary()));
 
                 emit(PipelineProgress.stageComplete(sessionId, PipelineStage.EVALUATION,
                         "Quality evaluation complete"));
@@ -247,13 +266,13 @@ public class PitchOrchestrator {
      * entries).
      */
     private FinancialProjection streamFinancialsWithRetry(
-            String sessionId, String marketSummary, String productSummary) throws Exception {
+            String sessionId, String marketSummary, String productSummary, FinancialAnalystAgent financialAgent) throws Exception {
 
         Exception lastException = null;
         for (int attempt = 1; attempt <= financialMaxRetries; attempt++) {
             try {
                 String json = streamAndAccumulate(sessionId, PipelineStage.FINANCIAL_PROJECTION,
-                        () -> financialAnalyst.projectFinancialsStream(marketSummary, productSummary));
+                        () -> financialAgent.projectFinancialsStream(marketSummary, productSummary));
                 FinancialProjection result = parse(json, FinancialProjection.class, "FinancialProjection");
                 validateFinancials(result);
                 return result;
@@ -370,5 +389,39 @@ public class PitchOrchestrator {
 
     private void emit(PipelineProgress event) {
         eventPublisher.publishEvent(event);
+    }
+
+    // ── Custom Agent Creation ─────────────────────────────────────────
+
+    private MarketAnalystAgent createMarketAnalystWithKey(String apiKey) {
+        return AiServices.builder(MarketAnalystAgent.class)
+                .streamingChatLanguageModel(langChain4jConfig.createStreamingResearchModelWithKey(apiKey))
+                .tools(new WebResearchTool()) // Assuming no other tools
+                .build();
+    }
+
+    private ProductManagerAgent createProductManagerWithKey(String apiKey) {
+        return AiServices.builder(ProductManagerAgent.class)
+                .streamingChatLanguageModel(langChain4jConfig.createStreamingStructuredModelWithKey(apiKey))
+                .build();
+    }
+
+    private FinancialAnalystAgent createFinancialAnalystWithKey(String apiKey) {
+        return AiServices.builder(FinancialAnalystAgent.class)
+                .streamingChatLanguageModel(langChain4jConfig.createStreamingStructuredModelWithKey(apiKey))
+                .tools(new FinancialCalculatorTool())
+                .build();
+    }
+
+    private PitchCreatorAgent createPitchCreatorWithKey(String apiKey) {
+        return AiServices.builder(PitchCreatorAgent.class)
+                .streamingChatLanguageModel(langChain4jConfig.createStreamingCreativeModelWithKey(apiKey))
+                .build();
+    }
+
+    private JudgeAgent createJudgeWithKey(String apiKey) {
+        return AiServices.builder(JudgeAgent.class)
+                .chatLanguageModel(langChain4jConfig.createJudgeModelWithKey(apiKey))
+                .build();
     }
 }

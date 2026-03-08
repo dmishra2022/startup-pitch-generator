@@ -3,6 +3,8 @@ package com.startup.pitch.controller;
 import com.startup.pitch.model.*;
 import com.startup.pitch.service.MarkdownService;
 import com.startup.pitch.service.PitchGenerationService;
+import com.startup.pitch.service.RateLimiterService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,15 +37,17 @@ public class PitchController {
 
     private final PitchGenerationService generationService;
     private final MarkdownService markdownService;
+    private final RateLimiterService rateLimiterService;
 
-    public PitchController(PitchGenerationService generationService, MarkdownService markdownService) {
+    public PitchController(PitchGenerationService generationService, MarkdownService markdownService, RateLimiterService rateLimiterService) {
         this.generationService = generationService;
         this.markdownService = markdownService;
+        this.rateLimiterService = rateLimiterService;
     }
 
     @GetMapping("/")
     public String index(Model model) {
-        model.addAttribute("ideaRequest", new StartupIdeaRequest("", null, null));
+        model.addAttribute("ideaRequest", new StartupIdeaRequest("", null, null, null));
         return "index";
     }
 
@@ -51,13 +55,22 @@ public class PitchController {
     public String generate(
             @Valid @ModelAttribute("ideaRequest") StartupIdeaRequest request,
             BindingResult bindingResult,
+            HttpServletRequest httpRequest,
             Model model) {
 
         if (bindingResult.hasErrors())
             return "index";
 
+        String clientIp = getClientIp(httpRequest);
+        boolean hasApiKey = request.apiKey() != null && !request.apiKey().isBlank();
+
+        if (!rateLimiterService.tryConsumeSimple(clientIp, hasApiKey)) {
+            model.addAttribute("error", "Rate limit exceeded. Please try again tomorrow or provide your own OpenAI API key for more requests.");
+            return "index";
+        }
+
         String sessionId = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-        log.info("New generation [{}]: {}", sessionId, request.concept());
+        log.info("New generation [{}]: {} from IP: {}", sessionId, request.concept(), clientIp);
 
         // Start pipeline async BEFORE rendering the progress page
         generationService.startGeneration(sessionId, request);
@@ -165,5 +178,16 @@ public class PitchController {
                 .replaceAll("[^a-z0-9\\s-]", "")
                 .replaceAll("\\s+", "-")
                 .substring(0, Math.min(40, s.length()));
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isBlank()) {
+            ip = request.getRemoteAddr();
+        } else {
+            String[] parts = ip.split(",");
+            ip = parts[0].trim();
+        }
+        return ip;
     }
 }

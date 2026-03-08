@@ -82,7 +82,7 @@ class StartupPitchApplicationTests {
                 "Skipping: OPENAI_API_KEY not set");
 
         String sessionId = "test-" + System.currentTimeMillis();
-        StartupIdeaRequest request = new StartupIdeaRequest(TEST_CONCEPT, "Urban commuters", null);
+        StartupIdeaRequest request = new StartupIdeaRequest(TEST_CONCEPT, "Urban commuters", null, null);
 
         generationService.startGeneration(sessionId, request);
 

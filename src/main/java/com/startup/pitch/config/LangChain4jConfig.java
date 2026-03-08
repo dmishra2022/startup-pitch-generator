@@ -86,6 +86,48 @@ public class LangChain4jConfig {
             .build();
     }
 
+    // ── Custom API Key Models ─────────────────────────────────────────
+
+    public OpenAiStreamingChatModel createStreamingResearchModelWithKey(String customApiKey) {
+        return OpenAiStreamingChatModel.builder()
+            .apiKey(customApiKey)
+            .modelName(modelName)
+            .temperature(0.6)
+            .maxTokens(3000)
+            .timeout(Duration.ofSeconds(90))
+            .build();
+    }
+
+    public OpenAiStreamingChatModel createStreamingStructuredModelWithKey(String customApiKey) {
+        return OpenAiStreamingChatModel.builder()
+            .apiKey(customApiKey)
+            .modelName(modelName)
+            .temperature(0.3)
+            .maxTokens(4096)
+            .timeout(Duration.ofSeconds(120))
+            .build();
+    }
+
+    public OpenAiStreamingChatModel createStreamingCreativeModelWithKey(String customApiKey) {
+        return OpenAiStreamingChatModel.builder()
+            .apiKey(customApiKey)
+            .modelName(modelName)
+            .temperature(0.8)
+            .maxTokens(4096)
+            .timeout(Duration.ofSeconds(120))
+            .build();
+    }
+
+    public OpenAiChatModel createJudgeModelWithKey(String customApiKey) {
+        return OpenAiChatModel.builder()
+            .apiKey(customApiKey)
+            .modelName(modelName)
+            .temperature(0.1)
+            .maxTokens(512)
+            .timeout(Duration.ofSeconds(30))
+            .build();
+    }
+
     // ── Agent Beans ───────────────────────────────────────────────────
 
     /**

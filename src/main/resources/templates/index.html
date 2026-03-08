@@ -49,6 +49,9 @@
         </p>
 
         <div class="card card--lg" style="text-align:left;max-width:620px;margin:0 auto var(--space-10)">
+          <div th:if="${error}" class="alert alert--error" style="margin-bottom:var(--space-6)">
+            <strong>Error:</strong> <span th:text="${error}"></span>
+          </div>
           <form th:action="@{/generate}" th:object="${ideaRequest}" method="post">
 
             <div class="form-group">
@@ -80,6 +83,11 @@
                   <input th:field="*{problemStatement}" type="text" class="form-input"
                     placeholder="e.g. Reducing operational latency" maxlength="300" />
                 </div>
+              </div>
+              <div style="margin-top:var(--space-4)">
+                <label class="form-label">OpenAI API Key (optional)</label>
+                <input th:field="*{apiKey}" type="password" class="form-input" placeholder="sk-..." maxlength="100" />
+                <div class="form-hint">Provide your own key for higher rate limits (10 additional requests per day).</div>
               </div>
             </details>
 

@@ -17,7 +17,10 @@ public record StartupIdeaRequest(
     String targetMarket,
 
     @Size(max = 300, message = "Problem statement is too long")
-    String problemStatement
+    String problemStatement,
+
+    @Size(max = 100, message = "API key is too long")
+    String apiKey
 
 ) {
     /** Produces a single enriched prompt string for the first agent. */
