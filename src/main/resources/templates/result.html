@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="${result.concept()} + ' — PitchForge'">Pitch — PitchForge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
+</head>
+
+<body>
+
+  <header class="site-header">
+    <div class="container">
+      <div class="site-header__inner">
+        <a href="/" class="site-logo">
+          <div class="site-logo__mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          PitchForge
+        </a>
+        <div class="flex items-center gap-4">
+          <div class="hide-mobile flex items-center gap-3 text-sm text-muted">
+            <span>Quality Score</span>
+            <span class="font-bold text-success" th:text="${overallQuality}+'/5'">4.2/5</span>
+            <span style="color:var(--c-border-lg)">·</span>
+            <span th:text="${result.durationSeconds()}+'s'">91s</span>
+          </div>
+          <a th:href="@{/download/{id}(id=${result.sessionId()})}" class="btn btn--primary">
+            Download Analysis
+          </a>
+          <a href="/" class="btn btn--ghost">New Concept</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-main" x-data="{ tab: 'pitch' }">
+    <div class="container">
+
+      <!-- Hero -->
+      <div class="result-hero" style="padding: var(--space-10) 0 var(--space-8)">
+        <div class="flex items-start justify-between gap-6" style="flex-wrap:wrap">
+          <div style="flex:1;min-width:300px">
+            <div class="result-hero__ready"
+              style="display:flex;align-items:center;gap:var(--space-2);font-size:0.75rem;font-weight:700;color:var(--c-success);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:var(--space-3)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" style="width:14px;height:14px">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              Analysis Complete &middot; Execution Finalized
+            </div>
+            <h1 class="result-hero__title"
+              style="font-size:2.5rem;font-weight:900;letter-spacing:-0.03em;line-height:1.1;margin-bottom:var(--space-3)"
+              th:text="${pitchDeck?.title() ?: result.concept()}">Title</h1>
+            <p class="result-hero__tagline" style="font-size:1.1rem;color:var(--c-text-2);margin-bottom:var(--space-4)"
+              th:text="${pitchDeck?.tagline()}">Tagline</p>
+            <p class="result-hero__summary"
+              style="font-size:0.95rem;color:var(--c-text-3);line-height:1.6;max-width:700px"
+              th:text="${pitchDeck?.executiveSummary()}">Summary</p>
+          </div>
+          <div class="flex gap-4 flex-shrink-0">
+            <div class="stat-tile">
+              <div class="stat-tile__value text-brand-light" th:text="${pitchDeck?.slideCount() ?: 8}">8</div>
+              <div class="stat-tile__label">Models</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile__value text-success" th:text="${overallQuality}">4.2</div>
+              <div class="stat-tile__label">Precision</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button @click="tab='pitch'" :class="tab==='pitch'?'active':''" class="tab-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>
+          Pitch Deck
+        </button>
+        <button @click="tab='market'" :class="tab==='market'?'active':''" class="tab-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <path d="M21 21l-4.35-4.35" />
+          </svg>
+          Market
+        </button>
+        <button @click="tab='product'" :class="tab==='product'?'active':''" class="tab-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M3 9h18M9 21V9" />
+          </svg>
+          Product
+        </button>
+        <button @click="tab='financials'" :class="tab==='financials'?'active':''" class="tab-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          Financials
+        </button>
+        <button @click="tab='evaluation'" :class="tab==='evaluation'?'active':''" class="tab-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          Evaluation
+        </button>
+      </div>
+
+      <!-- ── Pitch Deck ── -->
+      <div class="tab-panel" :class="tab==='pitch'?'active':''">
+        <div class="grid-2-3">
+          <!-- Slide outline sidebar -->
+          <div class="card card--sm" style="height:fit-content">
+            <p class="section-label">Structure Guide</p>
+            <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+              <div th:each="s, i : ${ {'Title','Problem','Market','Solution','Features','Financials','Why Now','Ask'} }"
+                style="display:flex;align-items:center;gap:var(--space-3);padding:8px 10px;border-radius:var(--r-md);background:var(--c-bg-3)">
+                <span
+                  style="width:18px;height:18px;border-radius:var(--r-sm);background:var(--c-brand-dim);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:var(--c-brand-light);flex-shrink:0"
+                  th:text="${i.index+1}">1</span>
+                <span class="text-xs" th:text="${s}">Slide</span>
+              </div>
+            </div>
+
+            <div class="mt-8 pt-6 border-top">
+              <p class="text-xs text-muted mb-4">Export options</p>
+              <a th:href="@{/download/{id}(id=${result.sessionId()})}" class="btn btn--ghost btn--sm w-full mb-2">
+                Download Markdown
+              </a>
+            </div>
+          </div>
+
+          <!-- Pitch Content -->
+          <div class="card">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-xl font-bold">Interpreted Pitch Narrative</h2>
+              <div class="badge badge--success">Ready for Review</div>
+            </div>
+
+            <div class="rendered-markdown" th:utext="${renderedPitch}">
+              Markdown content will be injected here...
+            </div>
+
+            <details class="mt-10 pt-6 border-top">
+              <summary class="text-xs text-muted cursor-pointer hover:text-white transition-colors">
+                View Raw Agent Output (Marp)
+              </summary>
+              <pre class="marp-raw mt-4"
+                style="background:var(--c-bg-3);padding:var(--space-4);border-radius:var(--r-md);font-size:0.8rem"
+                th:text="${pitchDeck?.marpMarkdown()}"></pre>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Market ── -->
+      <div class="tab-panel" :class="tab==='market'?'active':''" th:if="${market != null}">
+        <div class="grid-2" style="gap:var(--space-4)">
+          <div class="card card--sm">
+            <p class="section-label">Problem definition</p>
+            <p class="text-sm text-secondary" th:text="${market.problemDefinition()}"></p>
+          </div>
+          <div class="card card--sm">
+            <p class="section-label">Target users</p>
+            <p class="text-sm text-secondary" th:text="${market.targetUsers()}"></p>
+          </div>
+          <div class="card card--sm">
+            <p class="section-label">TAM / SAM / SOM</p>
+            <p class="text-sm text-secondary" th:text="${market.tamSamSom()}"></p>
+          </div>
+          <div class="card card--sm">
+            <p class="section-label">Competitive landscape</p>
+            <p class="text-sm text-secondary" th:text="${market.competitorsAndPositioning()}"></p>
+          </div>
+          <div class="card card--sm">
+            <p class="section-label">Demand signals</p>
+            <p class="text-sm text-secondary" th:text="${market.demandSignals()}"></p>
+          </div>
+          <div class="card card--sm">
+            <p class="section-label">Risks and gaps</p>
+            <p class="text-sm text-secondary" th:text="${market.risksAndGaps()}"></p>
+          </div>
+          <div class="card card--sm col-span-2">
+            <p class="section-label">Pricing and business model</p>
+            <p class="text-sm text-secondary" th:text="${market.pricingAndBusinessModel()}"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Product ── -->
+      <div class="tab-panel" :class="tab==='product'?'active':''" th:if="${product != null}">
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:var(--space-5)">
+          <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+            <div class="card card--sm">
+              <p class="section-label">Product overview</p>
+              <p class="text-sm text-secondary" th:text="${product.productOverview()}"></p>
+            </div>
+            <div class="card card--sm">
+              <p class="section-label">Core features</p>
+              <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)">
+                <span th:each="f : ${product.coreFeatures()}" class="tag" th:text="${f}">Feature</span>
+              </div>
+            </div>
+            <div class="card card--sm">
+              <p class="section-label">MVP scope</p>
+              <p class="text-sm text-secondary" th:text="${product.mvpScope()}"></p>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+            <div class="card card--sm" style="border-color:var(--c-brand-border)">
+              <p class="section-label">Value proposition</p>
+              <p class="text-sm font-semibold" style="color:var(--c-text-1)" th:text="${product.valueProposition()}">
+              </p>
+            </div>
+            <div class="card card--sm">
+              <p class="section-label">Success metrics</p>
+              <p class="text-sm text-secondary" th:text="${product.successMetrics()}"></p>
+            </div>
+            <div class="card card--sm">
+              <p class="section-label">Technical constraints</p>
+              <p class="text-sm text-secondary" th:text="${product.technicalConstraints()}"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Financials ── -->
+      <div class="tab-panel" :class="tab==='financials'?'active':''" th:if="${financials != null}">
+        <div class="grid-4" style="margin-bottom:var(--space-5)">
+          <div class="stat-tile">
+            <div class="stat-tile__value text-brand"
+              th:text="'$'+${#numbers.formatDecimal(financials.requiredInvestmentUSD(),0,'COMMA',0,'POINT')}">$0</div>
+            <div class="stat-tile__label">Required Investment</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-tile__value" style="color:var(--c-chart-5)"
+              th:text="'Year '+${financials.breakEvenYear()}">Year 3</div>
+            <div class="stat-tile__label">Break-even</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-tile__value text-success" style="font-size:1rem;padding-top:4px"
+              th:text="${financials.revenueModel()}">SaaS</div>
+            <div class="stat-tile__label">Revenue model</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-tile__value" style="color:var(--c-warning)"
+              th:text="'$'+${#numbers.formatDecimal(financials.totalRevenue(),0,'COMMA',0,'POINT')}">$0</div>
+            <div class="stat-tile__label">5-Year Revenue</div>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0;margin-bottom:var(--space-5);overflow:hidden">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="text-align:left">Year</th>
+                <th>Customers</th>
+                <th>Revenue</th>
+                <th>Costs</th>
+                <th>Profit</th>
+                <th>Margin</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="yr : ${financials.yearlyProjections()}">
+                <td th:text="'Year '+${yr.year()}">Year 1</td>
+                <td th:text="${#numbers.formatInteger(yr.customers(),1,'COMMA')}">0</td>
+                <td class="positive" th:text="'$'+${#numbers.formatDecimal(yr.revenue(),0,'COMMA',0,'POINT')}">$0</td>
+                <td class="negative" th:text="'$'+${#numbers.formatDecimal(yr.costs(),0,'COMMA',0,'POINT')}">$0</td>
+                <td th:classappend="${yr.isProfitable()} ? 'positive' : 'negative'"
+                  th:text="${yr.isProfitable() ? '+' : ''} + '$' + ${#numbers.formatDecimal(yr.profit(),0,'COMMA',0,'POINT')}">
+                  $0</td>
+                <td th:text="${#numbers.formatDecimal(yr.profitMarginPercent(),0,1)}+'%'">0%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-2" style="gap:var(--space-4)">
+          <div class="card card--sm">
+            <p class="section-label">Pricing model</p>
+            <p class="text-sm text-secondary" th:text="${financials.pricingModel()}"></p>
+          </div>
+          <div class="card card--sm">
+            <p class="section-label">Conversion and adoption</p>
+            <p class="text-sm text-secondary" th:text="${financials.conversionAndAdoption()}"></p>
+          </div>
+          <div class="card card--sm">
+            <p class="section-label">Key cost drivers</p>
+            <p class="text-sm text-secondary" th:text="${financials.keyCostDrivers()}"></p>
+          </div>
+          <div class="card card--sm">
+            <p class="section-label">Analyst notes</p>
+            <p class="text-sm text-secondary" th:text="${financials.financialNotes()}"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Evaluation ── -->
+      <div class="tab-panel" :class="tab==='evaluation'?'active':''">
+        <div class="grid-2" style="gap:var(--space-4)">
+
+          <div th:if="${result.marketEvaluation()!=null}" class="card card--sm"
+            th:with="ev=${result.marketEvaluation()}">
+            <div class="flex items-center justify-between mb-4">
+              <span class="font-semibold text-sm" th:text="${ev.stageName()}">Stage</span>
+              <span class="badge badge--success" th:text="${ev.qualityLabel()}">Good</span>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Clarity</span><span th:text="${ev.clarityScore()}+'/5'">4/5</span>
+              </div>
+              <div class="score-track">
+                <div class="score-bar" style="background:var(--c-brand-light)"
+                  th:style="'width:'+${ev.clarityScore()*20}+'%;background:var(--c-brand-light)'"></div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Structure</span><span
+                  th:text="${ev.structureScore()}+'/5'">4/5</span></div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.structureScore()*20}+'%;background:#a78bfa'"></div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Relevance</span><span
+                  th:text="${ev.relevanceScore()}+'/5'">4/5</span></div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.relevanceScore()*20}+'%;background:var(--c-success)'">
+                </div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Logic</span><span th:text="${ev.logicScore()}+'/5'">4/5</span></div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.logicScore()*20}+'%;background:#60a5fa'"></div>
+              </div>
+            </div>
+            <div class="border-top">
+              <p class="text-xs text-muted" th:text="${ev.notes()}"></p>
+              <p class="text-sm font-semibold text-success mt-2"
+                th:text="'Avg: '+${#numbers.formatDecimal(ev.averageScore(),0,1)}+'/5'">4.0/5</p>
+            </div>
+          </div>
+
+          <div th:if="${result.productEvaluation()!=null}" class="card card--sm"
+            th:with="ev=${result.productEvaluation()}">
+            <div class="flex items-center justify-between mb-4"><span class="font-semibold text-sm"
+                th:text="${ev.stageName()}">Stage</span><span class="badge badge--success"
+                th:text="${ev.qualityLabel()}">Good</span></div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Clarity</span><span th:text="${ev.clarityScore()}+'/5'"></span></div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.clarityScore()*20}+'%;background:var(--c-brand-light)'">
+                </div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Structure</span><span th:text="${ev.structureScore()}+'/5'"></span>
+              </div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.structureScore()*20}+'%;background:#a78bfa'"></div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Relevance</span><span th:text="${ev.relevanceScore()}+'/5'"></span>
+              </div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.relevanceScore()*20}+'%;background:var(--c-success)'">
+                </div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Logic</span><span th:text="${ev.logicScore()}+'/5'"></span></div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.logicScore()*20}+'%;background:#60a5fa'"></div>
+              </div>
+            </div>
+            <div class="border-top">
+              <p class="text-xs text-muted" th:text="${ev.notes()}"></p>
+              <p class="text-sm font-semibold text-success mt-2"
+                th:text="'Avg: '+${#numbers.formatDecimal(ev.averageScore(),0,1)}+'/5'"></p>
+            </div>
+          </div>
+
+          <div th:if="${result.financialEvaluation()!=null}" class="card card--sm"
+            th:with="ev=${result.financialEvaluation()}">
+            <div class="flex items-center justify-between mb-4"><span class="font-semibold text-sm"
+                th:text="${ev.stageName()}">Stage</span><span class="badge badge--success"
+                th:text="${ev.qualityLabel()}">Good</span></div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Clarity</span><span th:text="${ev.clarityScore()}+'/5'"></span></div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.clarityScore()*20}+'%;background:var(--c-brand-light)'">
+                </div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Structure</span><span th:text="${ev.structureScore()}+'/5'"></span>
+              </div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.structureScore()*20}+'%;background:#a78bfa'"></div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Relevance</span><span th:text="${ev.relevanceScore()}+'/5'"></span>
+              </div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.relevanceScore()*20}+'%;background:var(--c-success)'">
+                </div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Logic</span><span th:text="${ev.logicScore()}+'/5'"></span></div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.logicScore()*20}+'%;background:#60a5fa'"></div>
+              </div>
+            </div>
+            <div class="border-top">
+              <p class="text-xs text-muted" th:text="${ev.notes()}"></p>
+              <p class="text-sm font-semibold text-success mt-2"
+                th:text="'Avg: '+${#numbers.formatDecimal(ev.averageScore(),0,1)}+'/5'"></p>
+            </div>
+          </div>
+
+          <div th:if="${result.pitchEvaluation()!=null}" class="card card--sm" th:with="ev=${result.pitchEvaluation()}">
+            <div class="flex items-center justify-between mb-4"><span class="font-semibold text-sm"
+                th:text="${ev.stageName()}">Stage</span><span class="badge badge--success"
+                th:text="${ev.qualityLabel()}">Good</span></div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Clarity</span><span th:text="${ev.clarityScore()}+'/5'"></span></div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.clarityScore()*20}+'%;background:var(--c-brand-light)'">
+                </div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Structure</span><span th:text="${ev.structureScore()}+'/5'"></span>
+              </div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.structureScore()*20}+'%;background:#a78bfa'"></div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Relevance</span><span th:text="${ev.relevanceScore()}+'/5'"></span>
+              </div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.relevanceScore()*20}+'%;background:var(--c-success)'">
+                </div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-row__header"><span>Logic</span><span th:text="${ev.logicScore()}+'/5'"></span></div>
+              <div class="score-track">
+                <div class="score-bar" th:style="'width:'+${ev.logicScore()*20}+'%;background:#60a5fa'"></div>
+              </div>
+            </div>
+            <div class="border-top">
+              <p class="text-xs text-muted" th:text="${ev.notes()}"></p>
+              <p class="text-sm font-semibold text-success mt-2"
+                th:text="'Avg: '+${#numbers.formatDecimal(ev.averageScore(),0,1)}+'/5'"></p>
+            </div>
+          </div>
+
+          <!-- Overall -->
+          <div class="card card--sm col-span-2">
+            <p class="section-label">Overall pipeline quality</p>
+            <div class="flex items-center gap-6" style="margin-top:var(--space-2)">
+              <span class="text-4xl font-black text-success" th:text="${overallQuality}+'/5'">4.2/5</span>
+              <div style="flex:1">
+                <div class="progress-track progress-track--thick">
+                  <div class="progress-fill"
+                    th:style="'width:'+${#numbers.formatDecimal(result.overallQuality()*20,0,0)}+'%'"></div>
+                </div>
+                <p class="text-xs text-muted mt-2">Averaged across all four agents on clarity, structure, relevance, and
+                  logic dimensions.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Decision Flow ── -->
+      <div class="mt-12 mb-20" x-data="{ state: 'initial', feedback: '' }">
+        <div class="card"
+          style="background:linear-gradient(135deg, var(--c-bg-1), var(--c-bg-2)); border-color:var(--c-brand-border)">
+          <div x-show="state === 'initial'" class="flex flex-col items-center text-center py-6">
+            <div class="mb-4" style="color:var(--c-brand)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style="width:40px;height:40px">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Strategic Decision Point</h2>
+            <p class="text-muted max-w-md mb-8">Review the generated strategy and determine the next course of action.
+              PitchForge learns from your corrections.</p>
+
+            <div class="flex gap-4">
+              <button @click="state = 'accepted'" class="btn btn--primary" style="padding: 12px 32px">
+                Finalize & Accept
+              </button>
+              <button @click="state = 'refining'" class="btn btn--ghost" style="padding: 12px 32px">
+                Improvise & Refine
+              </button>
+            </div>
+          </div>
+
+          <!-- Accepted State -->
+          <div x-show="state === 'accepted'" x-cloak class="flex flex-col items-center text-center py-6">
+            <div class="mb-4 text-success">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                style="width:40px;height:40px">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Concept Validated</h2>
+            <p class="text-muted max-w-md mb-6">Execution strategy has been finalized. Download your assets or start a
+              new concept.</p>
+            <div class="flex gap-4">
+              <a th:href="@{/download/{id}(id=${result.sessionId()})}" class="btn btn--primary">Get Markdown Deck</a>
+              <a href="/" class="btn btn--ghost">Start New Idea</a>
+            </div>
+          </div>
+
+          <!-- Refining State -->
+          <div x-show="state === 'refining'" x-cloak>
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-xl font-bold">Feedback Loop</h2>
+              <button @click="state = 'initial'" class="text-xs text-muted hover:text-white">Cancel</button>
+            </div>
+            <p class="text-sm text-muted mb-6">Provide specific critical feedback to improve the pitch narrative, market
+              assumptions, or financial model.</p>
+
+            <form th:action="@{/refine/{id}(id=${result.sessionId()})}" method="post">
+              <div class="form-group mb-6">
+                <textarea name="feedback" class="form-input form-textarea"
+                  style="min-height:120px;background:var(--c-bg-3);border-color:var(--c-border-lg)"
+                  placeholder="e.g. 'The market size seems too small, focus on the global reach', 'Adjust pricing to a freemium model', 'Add more focus on the B2B security features'"></textarea>
+              </div>
+              <div class="flex justify-end gap-3">
+                <button type="button" @click="state = 'initial'" class="btn btn--ghost">Back</button>
+                <button type="submit" class="btn btn--primary">
+                  Execute Refinement Pass
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</body>
+
+</html>

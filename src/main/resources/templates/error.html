@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Error — PitchForge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+  <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:var(--space-6)">
+  <div class="card card--lg" style="max-width:440px;width:100%;text-align:center">
+    <div style="width:44px;height:44px;border-radius:var(--r-lg);background:var(--c-danger-dim);border:1px solid var(--c-danger-border);display:flex;align-items:center;justify-content:center;margin:0 auto var(--space-5);color:var(--c-danger)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <h1 class="text-xl font-bold mb-2">Pipeline failed</h1>
+    <p class="text-sm text-muted mb-4">An error occurred during generation.</p>
+    <p th:if="${error}" class="text-xs text-danger" style="background:var(--c-danger-dim);border:1px solid var(--c-danger-border);border-radius:var(--r-md);padding:var(--space-3) var(--space-4);margin-bottom:var(--space-5);font-family:var(--font-mono);text-align:left;word-break:break-word" th:text="${error}"></p>
+    <a href="/" class="btn btn--primary btn--full">Try again</a>
+  </div>
+</body>
+</html>

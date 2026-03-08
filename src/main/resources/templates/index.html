@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PitchForge — AI-Powered Pitch Deck Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
+</head>
+
+<body>
+
+  <header class="site-header">
+    <div class="container">
+      <div class="site-header__inner">
+        <a href="/" class="site-logo">
+          <div class="site-logo__mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          PitchForge
+        </a>
+        <div class="header-meta">
+          <span class="hide-mobile">Platform Status: Active</span>
+          <span style="color:var(--c-border-lg)" class="hide-mobile">·</span>
+          <span class="hide-mobile">GPT-4 Production Node</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container container--narrow">
+      <section class="hero">
+        <div class="hero__eyebrow">Enterprise Intelligence Pipeline</div>
+        <h1 class="hero__title">
+          Accelerate your startup<br />
+          <span class="accent">with professional analysis</span>
+        </h1>
+        <p class="hero__sub">
+          Specialized intelligence agents perform comprehensive market research, product scoping,
+          and financial modeling to generate investor-grade startup documentation.
+        </p>
+
+        <div class="card card--lg" style="text-align:left;max-width:620px;margin:0 auto var(--space-10)">
+          <form th:action="@{/generate}" th:object="${ideaRequest}" method="post">
+
+            <div class="form-group">
+              <label class="form-label">Startup concept <span class="required">*</span></label>
+              <textarea th:field="*{concept}" class="form-input form-textarea"
+                style="padding-top:12px;padding-bottom:12px;min-height:96px"
+                placeholder="Provide a detailed description of your startup concept, target audience, and value proposition."
+                required minlength="10" maxlength="500"></textarea>
+              <div th:if="${#fields.hasErrors('concept')}" class="form-error" th:errors="*{concept}"></div>
+              <div class="form-hint">Detailed descriptions result in more precise analytical outputs.</div>
+            </div>
+
+            <details style="margin-bottom:var(--space-6)">
+              <summary class="collapsible-trigger">
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+                Execution parameters
+              </summary>
+              <div style="margin-top:var(--space-4);display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)">
+                <div>
+                  <label class="form-label">Market segment</label>
+                  <input th:field="*{targetMarket}" type="text" class="form-input" placeholder="e.g. Fintech B2B"
+                    maxlength="200" />
+                </div>
+                <div>
+                  <label class="form-label">Core thesis</label>
+                  <input th:field="*{problemStatement}" type="text" class="form-input"
+                    placeholder="e.g. Reducing operational latency" maxlength="300" />
+                </div>
+              </div>
+            </details>
+
+            <button type="submit" class="btn btn--primary btn--lg btn--full">
+              Process Startup Concept
+            </button>
+          </form>
+        </div>
+
+        <p class="section-label" style="text-align:center">Core Analysis Pipeline</p>
+        <div class="agent-grid">
+          <div class="agent-card">
+            <div class="agent-card__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2v10z" />
+              </svg>
+            </div>
+            <div class="agent-card__name">Market Insight</div>
+            <div class="agent-card__desc">TAM/SAM modeling and competitive landscape assessment.</div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-card__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            <div class="agent-card__name">Product Strategy</div>
+            <div class="agent-card__desc">Technical scoping, feature prioritization, and roadmapping.</div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-card__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+              </svg>
+            </div>
+            <div class="agent-card__name">Financial Model</div>
+            <div class="agent-card__desc">Capital requirements and 5-year project P&L forecasting.</div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-card__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+            </div>
+            <div class="agent-card__name">Pitch Development</div>
+            <div class="agent-card__desc">Iterative generation of executive-ready presentations.</div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-card__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            </div>
+            <div class="agent-card__name">Quality Control</div>
+            <div class="agent-card__desc">Rigorous multi-dimensional validation of all outputs.</div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</body>
+
+</html>

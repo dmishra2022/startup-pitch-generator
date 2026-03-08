@@ -1,0 +1,67 @@
+[
+    {
+        "name": "com.startup.pitch.agent.FinancialAnalystAgent",
+        "allDeclaredMethods": true,
+        "allPublicMethods": true
+    },
+    {
+        "name": "com.startup.pitch.agent.JudgeAgent",
+        "allDeclaredMethods": true,
+        "allPublicMethods": true
+    },
+    {
+        "name": "com.startup.pitch.agent.MarketAnalystAgent",
+        "allDeclaredMethods": true,
+        "allPublicMethods": true
+    },
+    {
+        "name": "com.startup.pitch.agent.PitchCreatorAgent",
+        "allDeclaredMethods": true,
+        "allPublicMethods": true
+    },
+    {
+        "name": "com.startup.pitch.agent.ProductManagerAgent",
+        "allDeclaredMethods": true,
+        "allPublicMethods": true
+    },
+    {
+        "name": "org.thymeleaf.templatemode.TemplateMode",
+        "allPublicFields": true,
+        "allDeclaredFields": true,
+        "allPublicMethods": true,
+        "allDeclaredMethods": true,
+        "allDeclaredConstructors": true,
+        "allPublicConstructors": true,
+        "fields": [
+            {
+                "name": "HTML",
+                "allowWrite": false
+            },
+            {
+                "name": "XML",
+                "allowWrite": false
+            },
+            {
+                "name": "TEXT",
+                "allowWrite": false
+            },
+            {
+                "name": "JAVASCRIPT",
+                "allowWrite": false
+            },
+            {
+                "name": "CSS",
+                "allowWrite": false
+            },
+            {
+                "name": "RAW",
+                "allowWrite": false
+            }
+        ]
+    },
+    {
+        "name": "org.thymeleaf.spring6.templateresolver.SpringResourceTemplateResolver",
+        "allPublicMethods": true,
+        "allDeclaredFields": true
+    }
+]

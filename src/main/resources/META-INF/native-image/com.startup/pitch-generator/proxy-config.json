@@ -1,0 +1,17 @@
+[
+    [
+        "com.startup.pitch.agent.FinancialAnalystAgent"
+    ],
+    [
+        "com.startup.pitch.agent.JudgeAgent"
+    ],
+    [
+        "com.startup.pitch.agent.MarketAnalystAgent"
+    ],
+    [
+        "com.startup.pitch.agent.PitchCreatorAgent"
+    ],
+    [
+        "com.startup.pitch.agent.ProductManagerAgent"
+    ]
+]

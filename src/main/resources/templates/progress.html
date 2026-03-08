@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generating — PitchForge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
+</head>
+
+<body>
+
+  <header class="site-header">
+    <div class="container">
+      <div class="site-header__inner">
+        <a href="/" class="site-logo">
+          <div class="site-logo__mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          PitchForge
+        </a>
+        <span class="text-xs text-muted hide-mobile" style="font-family:var(--font-mono)">
+          Session <span th:text="${sessionId}" style="color:var(--c-brand-light)"></span>
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-main" x-data="pitchStream()" x-init="init()">
+    <div class="container" style="max-width:1100px">
+
+      <!-- Progress header -->
+      <div style="margin-bottom:var(--space-6)">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <div class="text-lg font-semibold" style="letter-spacing:-0.01em">Generating your pitch deck</div>
+            <div class="text-sm text-muted mt-1" x-text="statusMessage">Connecting to agents...</div>
+          </div>
+          <span class="text-2xl font-black text-brand" x-text="progress + '%'">0%</span>
+        </div>
+        <div class="progress-track progress-track--thick">
+          <div class="progress-fill" :style="'width:'+progress+'%'"></div>
+        </div>
+      </div>
+
+      <!-- Two-column layout: stages left, terminal right -->
+      <div class="grid-5-3">
+
+        <!-- Stage tracker -->
+        <div>
+          <p class="section-label">Pipeline stages</p>
+          <div class="stage-list">
+            <template x-for="(s, i) in stages" :key="s.key">
+              <div class="stage-row"
+                :class="{ active: currentStage===s.key && !isComplete(s.key), done: isComplete(s.key), pending: !isComplete(s.key) && currentStage!==s.key }">
+                <div class="stage-icon"
+                  :class="{ 'stage-icon--active': currentStage===s.key && !isComplete(s.key), 'stage-icon--done': isComplete(s.key), 'stage-icon--pending': !isComplete(s.key) && currentStage!==s.key }">
+                  <template x-if="currentStage===s.key && !isComplete(s.key)">
+                    <div class="spinner"></div>
+                  </template>
+                  <template x-if="isComplete(s.key)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"
+                      stroke-linejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </template>
+                  <template x-if="!isComplete(s.key) && currentStage!==s.key">
+                    <span x-text="i+1"></span>
+                  </template>
+                </div>
+                <div class="stage-content">
+                  <div class="stage-name" x-text="s.label"></div>
+                  <div class="stage-desc" x-text="s.desc"></div>
+                  <div class="stage-summary" x-show="isComplete(s.key) && stageSummaries[s.key]"
+                    x-text="stageSummaries[s.key]"></div>
+                </div>
+                <div class="stage-token-count" x-show="tokenCounts[s.key] > 0" x-text="tokenCounts[s.key]+'t'"></div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Completed stage cards -->
+          <div style="margin-top:var(--space-4);display:flex;flex-direction:column;gap:var(--space-3)">
+            <template x-for="s in completedStagesInOrder" :key="s.key">
+              <div class="complete-card">
+                <div class="complete-card__header">
+                  <div class="complete-card__title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                      stroke-linejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                    <span x-text="s.label"></span>
+                  </div>
+                  <span class="complete-card__tokens" x-text="tokenCounts[s.key]+' tokens'"></span>
+                </div>
+                <div class="complete-card__summary" x-text="stageSummaries[s.key]"></div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Error state -->
+          <div class="error-panel" x-show="failed" x-cloak style="margin-top:var(--space-4)">
+            <div class="error-panel__title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              Pipeline failed
+            </div>
+            <div class="error-panel__msg" x-text="errorMessage"></div>
+            <a href="/" class="text-brand text-sm" style="display:inline-block;margin-top:var(--space-3)">Try again</a>
+          </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+
+          <template x-if="!failed && currentStage !== 'COMPLETED'">
+            <div class="activity-log">
+              <div class="activity-log__header">
+                <div class="activity-log__title">System Activity Log</div>
+                <div class="text-xs text-muted" x-text="streaming ? 'Processing...' : 'Awaiting input'"></div>
+              </div>
+              <div class="activity-log__body" id="activityBody">
+                <template x-for="item in activityLog" :key="item.id">
+                  <div class="activity-item">
+                    <div class="activity-item__time" x-text="item.time"></div>
+                    <div class="activity-item__text" x-text="item.text"></div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- Success panel -->
+          <div class="success-panel" x-show="completed" x-cloak>
+            <div class="success-panel__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div class="text-lg font-bold mb-2">Analysis Complete</div>
+            <div class="text-sm text-muted mb-4">Finalizing your pitch deck...</div>
+            <div class="spinner" style="margin:0 auto"></div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script th:inline="javascript">
+    const SESSION_ID = /*[[${sessionId}]]*/ '';
+
+    function pitchStream() {
+      return {
+        currentStage: 'INITIALIZING',
+        progress: 0,
+        statusMessage: 'Connecting to agents...',
+        streaming: false,
+        completed: false,
+        failed: false,
+        errorMessage: '',
+        activityLog: [],
+        stageSummaries: {},
+        tokenCounts: {},
+        completedStages: {},
+        eventSource: null,
+        pollInterval: null,
+
+        stages: [
+          { key: 'MARKET_ANALYSIS', label: 'Market Analysis', desc: 'TAM/SAM, competitive landscape, demand signals' },
+          { key: 'PRODUCT_DEFINITION', label: 'Product Definition', desc: 'MVP scope, features, success metrics' },
+          { key: 'FINANCIAL_PROJECTION', label: 'Financial Projection', desc: '5-year P&L model and investment needs' },
+          { key: 'PITCH_CREATION', label: 'Pitch Creation', desc: 'Investor-ready 8-slide Marp deck' },
+          { key: 'EVALUATION', label: 'Quality Evaluation', desc: 'Scoring outputs on 4 dimensions' }
+        ],
+
+        stageOrder: ['INITIALIZING', 'MARKET_ANALYSIS', 'PRODUCT_DEFINITION', 'FINANCIAL_PROJECTION', 'PITCH_CREATION', 'EVALUATION', 'COMPLETED'],
+
+        init() {
+          this.stages.forEach(s => { this.tokenCounts[s.key] = 0; });
+          this.connect();
+        },
+
+        get completedStagesInOrder() {
+          return this.stages.filter(s => this.completedStages[s.key]);
+        },
+
+        addLog(text) {
+          const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          this.activityLog.push({ id: Date.now() + Math.random(), time, text });
+          this.$nextTick(() => this.scroll());
+        },
+
+        connect() {
+          this.eventSource = new EventSource('/stream/' + SESSION_ID);
+          this.eventSource.addEventListener('stage-start', e => this.onStageStart(JSON.parse(e.data)));
+          this.eventSource.addEventListener('token', e => this.onToken(JSON.parse(e.data)));
+          this.eventSource.addEventListener('stage-complete', e => this.onStageComplete(JSON.parse(e.data)));
+          this.eventSource.addEventListener('pipeline-complete', () => this.onDone());
+          this.eventSource.addEventListener('error', e => this.onError(JSON.parse(e.data)));
+          this.eventSource.onerror = () => { this.eventSource.close(); this.poll(); };
+        },
+
+        poll() {
+          this.pollInterval = setInterval(async () => {
+            try {
+              const r = await fetch('/status/' + SESSION_ID);
+              const d = await r.json();
+              if (d.redirectToResult) this.onDone();
+              else if (d.status === 'failed') this.onError({ data: d.errorMessage });
+              else { this.progress = d.progress; this.currentStage = d.stage; }
+            } catch (e) { }
+          }, 1500);
+        },
+
+        onStageStart(d) {
+          this.currentStage = d.stage;
+          this.progress = d.progressPercent;
+          this.streaming = true;
+          this.statusMessage = d.data || d.stageName;
+          this.addLog(`Agent ${d.stageName} initiated analysis...`);
+        },
+
+        onToken(d) {
+          this.tokenCounts[d.stage] = (this.tokenCounts[d.stage] || 0) + 1;
+          // We no longer log every token, but we could log milestones or just let the progress bar move
+          if (this.tokenCounts[d.stage] % 100 === 0) {
+            this.addLog(`Processing depth: ${this.tokenCounts[d.stage]} units...`);
+          }
+        },
+
+        onStageComplete(d) {
+          this.completedStages[d.stage] = true;
+          this.stageSummaries[d.stage] = d.data;
+          this.streaming = false;
+          const label = this.stages.find(s => s.key === d.stage)?.label || d.stage;
+          this.statusMessage = label + ' complete';
+          this.addLog(`Completed ${label}.`);
+        },
+
+        onDone() {
+          clearInterval(this.pollInterval);
+          this.completed = true; this.streaming = false; this.progress = 100;
+          this.currentStage = 'COMPLETED';
+          this.addLog("Pipeline execution successfully finalized.");
+          setTimeout(() => { window.location.href = '/result/' + SESSION_ID; }, 1100);
+        },
+
+        onError(d) {
+          clearInterval(this.pollInterval);
+          this.failed = true; this.streaming = false;
+          this.errorMessage = d.data || 'Unknown error';
+          this.addLog(`CRITICAL ERROR: ${this.errorMessage}`);
+        },
+
+        isComplete(key) { return !!this.completedStages[key]; },
+        scroll() { const el = document.getElementById('activityBody'); if (el) el.scrollTop = el.scrollHeight; }
+      }
+    }
+  </script>
+</body>
+
+</html>

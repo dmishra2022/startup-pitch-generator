@@ -1,0 +1,42 @@
+# Stage 1: Build Native Binary
+FROM ghcr.io/graalvm/native-image-community:21 AS build
+WORKDIR /app
+
+# Install Maven manually to avoid pulling Java 17 as a dependency
+RUN microdnf install -y wget tar gzip \
+    && wget https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz \
+    && tar xzf apache-maven-3.9.6-bin.tar.gz \
+    && mv apache-maven-3.9.6 /opt/maven \
+    && ln -s /opt/maven/bin/mvn /usr/bin/mvn \
+    && rm apache-maven-3.9.6-bin.tar.gz
+
+# Copy pom.xml and download dependencies
+COPY pom.xml .
+RUN mvn dependency:go-offline
+
+# Copy source and build native image
+COPY src ./src
+# -Pnative triggers the native-maven-plugin to build the native binary
+RUN mvn clean package -Pnative -DskipTests
+
+# Stage 2: Minimal Runtime
+# Use debian-slim for glibc compatibility
+FROM debian:12-slim
+WORKDIR /app
+
+# Install necessary runtime libraries for GraalVM native image
+RUN apt-get update && apt-get install -y libstdc++6 zlib1g && rm -rf /var/lib/apt/lists/*
+
+# Add a non-root user for security
+RUN groupadd -r spring && useradd -r -g spring spring
+USER spring:spring
+
+# Copy the native binary from the build stage
+# The binary name is usually the artifact id
+COPY --from=build /app/target/pitch-generator app-native
+
+# Optimization: GraalVM binaries don't use JAVA_OPTS in the same way.
+# Memory limits can be set directly via -Xmx if needed.
+EXPOSE 8080
+
+ENTRYPOINT ["./app-native"]

@@ -1,0 +1,40 @@
+# IDE Settings
+.idea/
+.eclipse/
+.classpath
+.project
+.settings/
+*.iml
+*.ipr
+*.iws
+
+# Build Files
+target/
+build/
+out/
+
+# Dependency Directories
+/node_modules/
+/bower_components/
+
+# Spring Boot Specifics
+.sts4-cache/
+.springBeans/
+*.properties.local
+*.env
+
+# Logs and Temporary Files
+logs/
+*.log
+*.tmp
+*.bak
+*~
+
+# Maven & Gradle Caches
+.gradle/
+.m2/
+
+# System Files (OS specific)
+.DS_Store
+Thumbs.db
+Desktop.ini
